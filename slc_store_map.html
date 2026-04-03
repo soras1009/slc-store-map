@@ -155,16 +155,16 @@
   .store-item.active { background: var(--surface2); border-left: 3px solid var(--accent); }
   .brand-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
   .store-info { flex: 1; min-width: 0; }
-  .store-name  { font-size: 14px; font-weight: 500; color: var(--text); }
-  .store-brand { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .store-addr  { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
-  .store-tel   { font-size: 12px; color: var(--accent); margin-top: 3px; }
+  .store-name  { font-size: 15px; font-weight: 500; color: var(--text); }
+  .store-brand { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .store-addr  { font-size: 13px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+  .store-tel   { font-size: 13px; color: var(--accent); margin-top: 3px; }
   .store-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
   .btn-nav {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 7px 14px;
     background: #03C75A; color: #fff;
-    font-size: 12px; font-weight: 700;
+    font-size: 13px; font-weight: 700;
     border-radius: 8px; text-decoration: none;
     font-family: 'Noto Sans KR', sans-serif;
     touch-action: manipulation;
@@ -266,7 +266,7 @@
     }
     .header-filters::-webkit-scrollbar { display: none; }
 
-    #map { top: var(--header-h); right: 320px; bottom: 0; }
+    #map { top: var(--header-h); right: 420px; bottom: 0; }
 
     .bottom-panel { display: none; }
 
@@ -274,7 +274,7 @@
       display: flex; flex-direction: column;
       position: fixed;
       top: var(--header-h); right: 0;
-      width: 320px; bottom: 0;
+      width: 420px; bottom: 0;
       background: var(--surface);
       border-left: 1px solid var(--border);
       z-index: 100; overflow: hidden;
@@ -284,8 +284,8 @@
       border-bottom: 1px solid var(--border);
   
     }
-    .sidebar-header strong { color: var(--text); font-size: 14px; display: block; margin-bottom: 2px; }
-    .sidebar-header span   { font-size: 12px; color: var(--text-muted); }
+    .sidebar-header strong { color: var(--text); font-size: 16px; display: block; margin-bottom: 2px; }
+    .sidebar-header span   { font-size: 13px; color: var(--text-muted); }
     .sidebar .store-list { flex: 1; }
   }
 </style>
@@ -399,6 +399,7 @@ const stores = [
   {brand:'chai797', sub:'Chai797 Plus', name:'Chai797 롯데광복점', addr:'부산광역시 중구 중앙대로 2 롯데백화점광복점 10층', tel:'051-678-3884', lat:35.1001, lng:129.0329},
   {brand:'chai797', sub:'Chai797 Jumbo', name:'Chai797 Jumbo 롯데대구점', addr:'대구광역시 북구 태평로 161 롯데백화점대구역 10층', tel:'053-660-1841', lat:35.8791, lng:128.5884},
   {brand:'chai797', sub:'Chai797 Plus', name:'Chai797 롯데부산본점', addr:'부산광역시 부산진구 가야대로 772 롯데백화점부산본점 지하1층', tel:'051-810-2091', lat:35.1565, lng:129.0596},
+  {brand:'hausom', sub:'호우섬', name:'호우섬 더현대서울점', addr:'서울특별시 영등포구 여의대로 108 더현대 서울 B1', tel:'0507-1344-0763', lat:37.5257, lng:126.9289},
   {brand:'hausom', sub:'호우섬', name:'호우섬 타임빌라스수원점', addr:'경기도 수원특례시 권선구 세화로 134 타임빌라스수원 3F', tel:'031-8066-1999', lat:37.2641, lng:127.0031},
   {brand:'hausom', sub:'호우섬', name:'호우섬 현대중동점', addr:'경기도 부천시 원미구 길주로 180 지하1층', tel:'032-623-2048', lat:37.5054, lng:126.7655},
   {brand:'hausom', sub:'호우섬', name:'호우섬 롯데인천점', addr:'인천광역시 미추홀구 연남로 35 롯데백화점 지하1층', tel:'032-242-2051', lat:37.4593, lng:126.7019},
@@ -439,9 +440,9 @@ const stores = [
 
 // 지도
 const map = L.map('map', { center:[36.5,127.8], zoom:7, zoomControl:true, attributionControl:false });
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
   maxZoom: 19,
-  attribution: '© OpenStreetMap'
+  attribution: '© CartoDB'
 }).addTo(map);
 
 function makeIcon(brand) {
