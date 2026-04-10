@@ -159,6 +159,14 @@
   .store-brand { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .store-addr  { font-size: 13px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
   .store-tel   { font-size: 13px; color: var(--accent); margin-top: 3px; }
+  .store-promo {
+    font-size: 12px; color: #c8a96e;
+    background: rgba(200,169,110,0.1);
+    border-left: 2px solid #c8a96e;
+    padding: 4px 8px; margin-top: 5px;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.5;
+  }
   .store-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
   .btn-nav {
     display: inline-flex; align-items: center; gap: 4px;
@@ -248,7 +256,23 @@
   .popup-name  { font-weight: 700; font-size: 15px; margin-bottom: 3px; padding-right: 16px; }
   .popup-brand { font-size: 11px; margin-bottom: 7px; }
   .popup-addr  { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 5px; }
-  .popup-tel   { font-size: 12px; color: var(--accent); margin-bottom: 10px; }
+  .popup-promo {
+    background: linear-gradient(135deg, #c8a96e22, #c8a96e11);
+    border: 1px solid #c8a96e55;
+    border-radius: 6px;
+    padding: 7px 10px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: var(--accent2, #e8c98e);
+    line-height: 1.5;
+  }
+  .popup-promo .promo-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #c8a96e;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
   .popup-actions { display: flex; gap: 8px; }
 
   /* DESKTOP 768+ */
@@ -438,6 +462,37 @@ const stores = [
   {brand:'itamae', sub:'이타마에스시', name:'이타마에스시 도곡점', addr:'서울특별시 강남구 도곡동', tel:'-', lat:37.4897, lng:127.0476},
 ];
 
+// 프로모션 데이터
+const PROMOS = {
+  start: new Date('2026-04-06'),
+  end:   new Date('2026-04-12T23:59:59'),
+  items: {
+    chai797: '5만원 이상 구매 시 유린기 증정 (테이블당 1개)',
+    hausom:  '5만원 이상 구매 시 크리스피 라페 치킨 증정 (테이블당 1개)',
+    hausom_salon: '5만원 이상 구매 시 새우가지강정 증정 (테이블당 1개)',
+    seorjae: '5만원 이상 구매 시 냉 제육 증정 (테이블당 1개)',
+    itamae:  '5만원 이상 구매 시 혼마구로 볶은살 사시미 증정 (테이블당 1개)',
+    chaidim: '5만원 이상 구매 시 레몬고추유린기 증정 (테이블당 1개)',
+    butcher: '불고기·구이메뉴 2인 이상 주문 시 한우육회 증정',
+  }
+};
+
+function getPromo(store) {
+  const now = new Date();
+  if (now < PROMOS.start || now > PROMOS.end) return null;
+  if (store.brand === 'hausom' && store.sub === '살롱드호우섬') return PROMOS.items.hausom_salon;
+  return PROMOS.items[store.brand] || null;
+}
+
+function promoHTML(store) {
+  const promo = getPromo(store);
+  if (!promo) return '';
+  return `<div class="popup-promo">
+    <div class="promo-label">🎉 고지원 프로 통산 3승 기념 이벤트 · 4/6~4/12</div>
+    ${promo}
+  </div>`;
+}
+
 // 지도
 const map = L.map('map', { center:[36.5,127.8], zoom:7, zoomControl:true, attributionControl:false });
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -480,11 +535,13 @@ document.getElementById('panel-handle').addEventListener('touchend', e => {
 function itemHTML(s, i, filter) {
   const nav = `https://map.naver.com/p/search/${encodeURIComponent(s.name)}`;
   const tel = s.tel !== '-' ? `tel:${s.tel.replace(/[^0-9]/g,'')}` : null;
+  const promo = getPromo(s);
   return `<div class="store-item" data-idx="${i}" onclick="focusStore(${i},'${filter}')">
     <div class="brand-dot" style="background:${BRAND_COLORS[s.brand]}"></div>
     <div class="store-info">
       <div class="store-name">${s.name}</div>
       <div class="store-brand">${BRAND_NAMES[s.brand]} · ${s.sub}</div>
+      ${promo ? `<div class="store-promo">🎉 ${promo}</div>` : ''}
       <div class="store-addr">${s.addr}</div>
       ${s.tel!=='-'?`<div class="store-tel">${s.tel}</div>`:''}
       <div class="store-actions">
@@ -507,6 +564,7 @@ function renderStores(filter) {
     m.bindPopup(`
       <div class="popup-name">${store.name}</div>
       <div class="popup-brand" style="color:${BRAND_COLORS[store.brand]}">${BRAND_NAMES[store.brand]} · ${store.sub}</div>
+      ${promoHTML(store)}
       <div class="popup-addr">${store.addr}</div>
       ${store.tel!=='-'?`<div class="popup-tel">${store.tel}</div>`:''}
       <div class="popup-actions">
