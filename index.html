@@ -6,7 +6,7 @@
 <title>SL&C 매장 지도</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
-<script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=hfkhrx6jrf"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=033299bbd09ba760c39fdbfb18c958be"></script>
 <style>
   :root {
     --bg: #0d0d0d;
@@ -163,7 +163,7 @@
   .btn-nav {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 7px 14px;
-    background: #03C75A; color: #fff;
+    background: #FEE500; color: #000;
     font-size: 13px; font-weight: 700;
     border-radius: 8px; text-decoration: none;
     font-family: 'Noto Sans KR', sans-serif;
@@ -231,18 +231,31 @@
   .mobile-search .search-input { width: 100%; flex: 1; }
   .mobile-search .search-input:focus { width: 100%; }
 
-  /* 네이버 지도 인포윈도우 커스텀 스타일 */
-  .custom-infowindow {
+  /* 카카오 지도 커스텀 오버레이 스타일 */
+  .custom-overlay {
+    position: relative;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px 16px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.5);
-    min-width: 220px;
+    min-width: 240px;
     color: var(--text);
-    position: relative;
+    bottom: 50px;
   }
-  .infowindow-close {
+  .custom-overlay::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--surface);
+  }
+  .overlay-close {
     position: absolute;
     top: 8px;
     right: 10px;
@@ -253,6 +266,7 @@
     border: none;
     padding: 0;
     line-height: 1;
+    z-index: 10;
   }
   .popup-name  { font-weight: 700; font-size: 15px; margin-bottom: 3px; padding-right: 20px; }
   .popup-brand { font-size: 11px; margin-bottom: 7px; }
@@ -265,7 +279,7 @@
     padding: 7px 10px;
     margin-bottom: 10px;
     font-size: 12px;
-    color: var(--accent2, #e8c98e);
+    color: #e8c98e;
     line-height: 1.5;
   }
   .popup-promo .promo-label {
@@ -495,23 +509,25 @@ function promoHTML(store) {
   </div>`;
 }
 
-// 네이버 지도 초기화
-const mapOptions = {
-  center: new naver.maps.LatLng(36.5, 127.8),
-  zoom: 7,
-  zoomControl: true,
-  zoomControlOptions: {
-    position: naver.maps.Position.RIGHT_CENTER
-  }
+// 카카오 지도 초기화
+const mapContainer = document.getElementById('map');
+const mapOption = {
+  center: new kakao.maps.LatLng(36.5, 127.8),
+  level: 13
 };
-const map = new naver.maps.Map('map', mapOptions);
+const map = new kakao.maps.Map(mapContainer, mapOption);
+
+// 줌 컨트롤 추가
+const zoomControl = new kakao.maps.ZoomControl();
+map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
 let markers = [];
-let infoWindows = [];
+let overlays = [];
 let activeFilter = 'all';
+let currentOverlay = null;
 
-// 커스텀 마커 아이콘 생성
-function getMarkerIcon(brand) {
+// 커스텀 마커 이미지 생성
+function getMarkerImage(brand) {
   const color = BRAND_COLORS[brand];
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">
     <path d="M15 0C6.72 0 0 6.72 0 15c0 11.25 15 23 15 23S30 26.25 30 15C30 6.72 23.28 0 15 0z" fill="${color}" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
@@ -519,11 +535,11 @@ function getMarkerIcon(brand) {
     <circle cx="15" cy="15" r="4.5" fill="rgba(255,255,255,0.9)"/>
   </svg>`;
   
-  return {
-    content: svg,
-    size: new naver.maps.Size(30, 38),
-    anchor: new naver.maps.Point(15, 38)
-  };
+  const imageSrc = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  const imageSize = new kakao.maps.Size(30, 38);
+  const imageOption = {offset: new kakao.maps.Point(15, 38)};
+  
+  return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
 }
 
 // 모바일 패널
@@ -542,7 +558,7 @@ document.getElementById('panel-handle').addEventListener('touchend', e => {
 }, {passive:true});
 
 function itemHTML(s, i, filter) {
-  const nav = `https://map.naver.com/p/search/${encodeURIComponent(s.name)}`;
+  const nav = `https://map.kakao.com/link/search/${encodeURIComponent(s.name)}`;
   const tel = s.tel !== '-' ? `tel:${s.tel.replace(/[^0-9]/g,'')}` : null;
   const promo = getPromo(s);
   return `<div class="store-item" data-idx="${i}" onclick="focusStore(${i},'${filter}')">
@@ -554,59 +570,67 @@ function itemHTML(s, i, filter) {
       <div class="store-addr">${s.addr}</div>
       ${s.tel!=='-'?`<div class="store-tel">${s.tel}</div>`:''}
       <div class="store-actions">
-        <a class="btn-nav" href="${nav}" target="_blank" onclick="event.stopPropagation()">네이버 길찾기</a>
+        <a class="btn-nav" href="${nav}" target="_blank" onclick="event.stopPropagation()">카카오 길찾기</a>
         ${tel?`<a class="btn-call" href="${tel}" onclick="event.stopPropagation()">전화</a>`:''}
       </div>
     </div>
   </div>`;
 }
 
+function closeOverlay() {
+  if (currentOverlay) {
+    currentOverlay.setMap(null);
+    currentOverlay = null;
+  }
+}
+window.closeOverlay = closeOverlay;
+
 function renderStores(filter) {
-  // 기존 마커와 인포윈도우 제거
+  // 기존 마커와 오버레이 제거
   markers.forEach(m => m.setMap(null));
-  infoWindows.forEach(iw => iw.close());
+  closeOverlay();
   markers = [];
-  infoWindows = [];
   
   const filtered = filter==='all' ? stores : stores.filter(s=>s.brand===filter);
 
   filtered.forEach((store, idx) => {
-    const position = new naver.maps.LatLng(store.lat, store.lng);
-    const marker = new naver.maps.Marker({
+    const position = new kakao.maps.LatLng(store.lat, store.lng);
+    const marker = new kakao.maps.Marker({
       position: position,
-      map: map,
-      icon: getMarkerIcon(store.brand)
+      image: getMarkerImage(store.brand),
+      map: map
     });
 
-    const nav = `https://map.naver.com/p/search/${encodeURIComponent(store.name)}`;
+    const nav = `https://map.kakao.com/link/search/${encodeURIComponent(store.name)}`;
     const tel = store.tel!=='-' ? `tel:${store.tel.replace(/[^0-9]/g,'')}` : null;
     
-    const contentString = `
-      <div class="custom-infowindow">
-        <button class="infowindow-close" onclick="closeInfoWindow(${idx})">×</button>
+    const overlayContent = `
+      <div class="custom-overlay">
+        <button class="overlay-close" onclick="closeOverlay()">×</button>
         <div class="popup-name">${store.name}</div>
         <div class="popup-brand" style="color:${BRAND_COLORS[store.brand]}">${BRAND_NAMES[store.brand]} · ${store.sub}</div>
         ${promoHTML(store)}
         <div class="popup-addr">${store.addr}</div>
         ${store.tel!=='-'?`<div class="popup-tel">${store.tel}</div>`:''}
         <div class="popup-actions">
-          <a class="btn-nav" href="${nav}" target="_blank">네이버 길찾기</a>
+          <a class="btn-nav" href="${nav}" target="_blank">카카오 길찾기</a>
           ${tel?`<a class="btn-call" href="${tel}">전화</a>`:''}
         </div>
       </div>
     `;
 
-    const infoWindow = new naver.maps.InfoWindow({
-      content: contentString,
-      borderWidth: 0,
-      backgroundColor: 'transparent',
-      disableAnchor: true,
-      pixelOffset: new naver.maps.Point(0, -10)
-    });
-
-    naver.maps.Event.addListener(marker, 'click', function() {
-      infoWindows.forEach(iw => iw.close());
-      infoWindow.open(map, marker);
+    kakao.maps.event.addListener(marker, 'click', function() {
+      closeOverlay();
+      
+      const customOverlay = new kakao.maps.CustomOverlay({
+        position: position,
+        content: overlayContent,
+        yAnchor: 1,
+        zIndex: 999
+      });
+      
+      customOverlay.setMap(map);
+      currentOverlay = customOverlay;
       
       if (window.innerWidth < 768) {
         panelExpanded = true;
@@ -622,9 +646,9 @@ function renderStores(filter) {
     });
 
     markers.push(marker);
-    infoWindows.push(infoWindow);
-    store.infoWindow = infoWindow;
     store.marker = marker;
+    store.position = position;
+    store.overlayContent = overlayContent;
   });
 
   const html = filtered.length ? filtered.map((s,i)=>itemHTML(s,i,filter)).join('') : '<div class="no-results">매장 정보가 없습니다</div>';
@@ -636,22 +660,26 @@ function renderStores(filter) {
   document.getElementById('m-panel-count').textContent = `${filtered.length}개`;
 }
 
-function closeInfoWindow(idx) {
-  infoWindows.forEach(iw => iw.close());
-}
-window.closeInfoWindow = closeInfoWindow;
-
 function focusStore(idx, filter) {
   const filtered = filter==='all'?stores:stores.filter(s=>s.brand===filter);
   const store = filtered[idx];
   if (!store) return;
   
-  map.setCenter(new naver.maps.LatLng(store.lat, store.lng));
-  map.setZoom(15);
+  const position = new kakao.maps.LatLng(store.lat, store.lng);
+  map.setCenter(position);
+  map.setLevel(3);
   
-  infoWindows.forEach(iw => iw.close());
-  if (store.infoWindow && store.marker) {
-    store.infoWindow.open(map, store.marker);
+  closeOverlay();
+  
+  if (store.overlayContent) {
+    const customOverlay = new kakao.maps.CustomOverlay({
+      position: position,
+      content: store.overlayContent,
+      yAnchor: 1,
+      zIndex: 999
+    });
+    customOverlay.setMap(map);
+    currentOverlay = customOverlay;
   }
   
   ['d-store-list','m-store-list'].forEach(id=>{
@@ -682,6 +710,11 @@ document.querySelectorAll('.brand-btn').forEach(btn=>{
 updateCounts();
 renderStores('all');
 
+// 지도 클릭 시 오버레이 닫기
+kakao.maps.event.addListener(map, 'click', function() {
+  closeOverlay();
+});
+
 // 검색 기능
 let searchQuery = '';
 
@@ -698,26 +731,59 @@ function applySearch(q) {
   document.getElementById('m-panel-count').textContent = `${filtered.length}개`;
 
   markers.forEach(m => m.setMap(null));
-  infoWindows.forEach(iw => iw.close());
+  closeOverlay();
   markers = [];
-  infoWindows = [];
   
   filtered.forEach((store, idx) => {
-    const position = new naver.maps.LatLng(store.lat, store.lng);
-    const marker = new naver.maps.Marker({
+    const position = new kakao.maps.LatLng(store.lat, store.lng);
+    const marker = new kakao.maps.Marker({
       position: position,
-      map: map,
-      icon: getMarkerIcon(store.brand)
+      image: getMarkerImage(store.brand),
+      map: map
     });
+    
+    const nav = `https://map.kakao.com/link/search/${encodeURIComponent(store.name)}`;
+    const tel = store.tel!=='-' ? `tel:${store.tel.replace(/[^0-9]/g,'')}` : null;
+    
+    const overlayContent = `
+      <div class="custom-overlay">
+        <button class="overlay-close" onclick="closeOverlay()">×</button>
+        <div class="popup-name">${store.name}</div>
+        <div class="popup-brand" style="color:${BRAND_COLORS[store.brand]}">${BRAND_NAMES[store.brand]} · ${store.sub}</div>
+        ${promoHTML(store)}
+        <div class="popup-addr">${store.addr}</div>
+        ${store.tel!=='-'?`<div class="popup-tel">${store.tel}</div>`:''}
+        <div class="popup-actions">
+          <a class="btn-nav" href="${nav}" target="_blank">카카오 길찾기</a>
+          ${tel?`<a class="btn-call" href="${tel}">전화</a>`:''}
+        </div>
+      </div>
+    `;
+    
+    kakao.maps.event.addListener(marker, 'click', function() {
+      closeOverlay();
+      const customOverlay = new kakao.maps.CustomOverlay({
+        position: position,
+        content: overlayContent,
+        yAnchor: 1,
+        zIndex: 999
+      });
+      customOverlay.setMap(map);
+      currentOverlay = customOverlay;
+    });
+    
     markers.push(marker);
+    store.marker = marker;
+    store.position = position;
+    store.overlayContent = overlayContent;
   });
 
   if (filtered.length > 0 && searchQuery) {
-    const bounds = new naver.maps.LatLngBounds();
+    const bounds = new kakao.maps.LatLngBounds();
     filtered.forEach(s => {
-      bounds.extend(new naver.maps.LatLng(s.lat, s.lng));
+      bounds.extend(new kakao.maps.LatLng(s.lat, s.lng));
     });
-    map.fitBounds(bounds);
+    map.setBounds(bounds);
   }
 }
 
