@@ -510,7 +510,11 @@ let map, markers = [], currentOverlay = null, activeFilter = 'all';
 
 function loadKakaoMap() {
   const script = document.createElement('script');
-  script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${CONFIG.kakaoAppKey}&onload=initMap`;
+  script.async = true;
+  script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${CONFIG.kakaoAppKey}&autoload=false`;
+  script.onload = function() {
+    kakao.maps.load(initMap);
+  };
   document.head.appendChild(script);
 }
 
