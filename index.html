@@ -582,7 +582,7 @@ function closeOverlay() {
 window.closeOverlay = closeOverlay;
 
 function makeOverlayContent(store) {
-  const nav = `https://map.kakao.com/link/search/${encodeURIComponent(store.name)}`;
+  const nav = `https://map.naver.com/p/search/${encodeURIComponent(store.name)}`;
   const tel = store.tel !== '-' ? `tel:${store.tel.replace(/[^0-9]/g,'')}` : null;
   return `<div class="custom-overlay">
     <button class="overlay-close" onclick="closeOverlay()">×</button>
@@ -592,14 +592,14 @@ function makeOverlayContent(store) {
     <div class="popup-addr">${store.addr}</div>
     ${store.tel!=='-'?`<div class="popup-tel">${store.tel}</div>`:''}
     <div class="popup-actions">
-      <a class="btn-nav" href="${nav}" target="_blank">카카오 길찾기</a>
+      <a class="btn-nav" href="${nav}" target="_blank">네이버 길찾기</a>
       ${tel?`<a class="btn-call" href="${tel}">전화</a>`:''}
     </div>
   </div>`;
 }
 
 function itemHTML(s, i, filter) {
-  const nav = `https://map.kakao.com/link/search/${encodeURIComponent(s.name)}`;
+  const nav = `https://map.naver.com/p/search/${encodeURIComponent(s.name)}`;
   const tel = s.tel !== '-' ? `tel:${s.tel.replace(/[^0-9]/g,'')}` : null;
   const promo = getPromo(s);
   return `<div class="store-item" data-idx="${i}" onclick="focusStore(${i},'${filter}')">
@@ -611,7 +611,7 @@ function itemHTML(s, i, filter) {
       <div class="store-addr">${s.addr}</div>
       ${s.tel!=='-'?`<div class="store-tel">${s.tel}</div>`:''}
       <div class="store-actions">
-        <a class="btn-nav" href="${nav}" target="_blank" onclick="event.stopPropagation()">카카오 길찾기</a>
+        <a class="btn-nav" href="${nav}" target="_blank" onclick="event.stopPropagation()">네이버 길찾기</a>
         ${tel?`<a class="btn-call" href="${tel}" onclick="event.stopPropagation()">전화</a>`:''}
       </div>
     </div>
